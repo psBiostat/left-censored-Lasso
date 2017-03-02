@@ -37,20 +37,7 @@ Surv <- cbind(Z, Cens)
 colnames(Surv) <- c("time", "status")
 fit_ReverseCox = glmnet::cv.glmnet(X, Surv, family = "cox", alpha = 1, nfolds = 5, foldid = foldid)
 
-#Lasso NonParaBJ <- version modifié du package bujar
-source("Mutation/Article/FonctionR_article/bujar/bjboost.R")
-source("Mutation/Article/FonctionR_article/bujar/gcv_enet.R")
-source("Mutation/Article/FonctionR_article/bujar/bujar_PS.R")
-source("Mutation/Article/FonctionR_article/bujar/gamplot_out.R")
-source("Mutation/Article/FonctionR_article/bujar/vimpint.R")
-source("Mutation/Article/FonctionR_article/bujar/fpartial.R")
-source("Mutation/Article/FonctionR_article/bujar/mypartialPlot.R")
-source("Mutation/Article/FonctionR_article/bujar/rif.R")
-source("Mutation/Article/FonctionR_article/bujar/bstfit_PS.R")
-source("Mutation/Article/FonctionR_article/bujar/cvmboost.R")
-source("Mutation/Article/FonctionR_article/bujar/important_inter.R")
-source("Mutation/Article/FonctionR_article/bujar/interactions.R")
-source("Mutation/Article/FonctionR_article/bujar/predval_PS.R")
+#Lasso NonParaBJ <- version modifiÃ© du package bujar
 lambda <- seq(0, 5, by = 0.2)
 fit_NonParBJ <- bujar(x = X, y = Z, cens = Cens, learner = "lasso", lambda = lambda,
                       nfold = 5, foldid = foldid, cv = TRUE, tuning = TRUE)
@@ -60,5 +47,4 @@ fit_QuantReg <-  rqPen::cv.rq.pen(X, Y, tau=.5, lambda=NULL, weights=NULL, penal
                                      nfolds = 5,foldid=foldid)
 
 #Gauss BJ
-fit_GaussBJ <- cvGaussBJ(Y, X, s = s, Cens, zero = 10^(-10), maxIter = 1500,
-                        lambda,  penalty.factor = rep(1, dim(X)[2]), groups)
+fit_GaussBJ <- cvGaussBJ(Y = Y, X = X, s = s, Cens = Cens, lambda = lambda, groups = foldid)
