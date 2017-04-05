@@ -37,6 +37,8 @@ Z = M - Y
 Surv <- cbind(Z, Cens)
 colnames(Surv) <- c("time", "status")
 fit_ReverseCox = glmnet::cv.glmnet(X, Surv, family = "cox", alpha = 1, nfolds = 5, foldid = foldid)
+fit_cvl <- hdcox.lasso(X[-which(groups == l),], Surv, nfolds = 5,
+                           foldid = foldid, rule = "lambda.1se")
 
 #Lasso NonParaBJ <- version modifié du package bujar
 lambda <- seq(0, 5, by = 0.2)
