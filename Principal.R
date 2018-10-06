@@ -27,6 +27,8 @@ foldid <- rep(0, n)
 foldid[which(Cens == 0)] <- sample(length(which(Cens == 0))) %% 5 + 1
 foldid[which(Cens == 1)] <- sample(length(which(Cens == 1))) %% 5 + 1
 
+#Fit method
+
 #Lasso LOD
 fit_LOD = glmnet::cv.glmnet(X, Y, nfolds = 5, foldid = foldid, alpha=1)
 
@@ -36,8 +38,8 @@ fit_NonParBJ <- bujar::bujar(x = X, y = Z, cens = Cens, learner = "lasso", lambd
                       nfold = 5, foldid = foldid, cv = TRUE, tuning = TRUE, trace = TRUE)
 
 #Quantile regression
-fit_QuantReg <-  rqPen::cv.rq.pen(X, Y, tau=.5, lambda=NULL, weights=NULL, penalty="LASSO",
-                                  nfolds = 5,foldid=foldid)
+#fit_QuantReg <-  rqPen::cv.rq.pen(X, Y, tau=.5, lambda=NULL, weights=NULL, penalty="LASSO",
+#                                  nfolds = 5,foldid=foldid)
 
 #Gauss BJ
 lambda <- seq(0, 5, by = 0.2)
