@@ -1,11 +1,13 @@
 cvGaussBJ = function(Y, X, s, Cens, zero = 10^(-10), maxIter = 1500,
-                   lambda,  penalty.factor = rep(1, dim(X)[2]), groups){
+                   lambda,  penalty.factor = rep(1, dim(X)[2]), groups, maxcycle = 5){
   
   if(sum(search()=="package:glmnet")==0){library(glmnet)}
   if(sum(search()=="package:foreach")==0){library(foreach)}
   if(sum(search() == "package:parcor") == 0){library(parcor)}
   
   MSE <- c()
+  
+  # browser()
   
   for(ii in 1:length(lambda)){
     mse <- c()
@@ -14,7 +16,8 @@ cvGaussBJ = function(Y, X, s, Cens, zero = 10^(-10), maxIter = 1500,
       #Initialisation
       iter = 1              
       test = c(1, 1, 1)
-      beta.hat <- matrix(ncol = dim(X)[2] + 2)
+      cycleperiod <- 1
+      beta.hat <- matrix(ncol = dim(X)[2] + 1)
       sigma2.hat <- c()
       
       Y.star <- Y[groups != l]
@@ -26,7 +29,7 @@ cvGaussBJ = function(Y, X, s, Cens, zero = 10^(-10), maxIter = 1500,
       
       #Iteration
       while(sum(test < zero) < 3 && iter < maxIter && cycleperiod < maxcycle){ 
-        #     cat(iter, "\n")
+            # cat(iter, "\n")
         iter = iter + 1
         beta.old = beta.hat[iter - 1, ]
         sigma2.old = sigma2.hat[iter - 1]
@@ -45,11 +48,13 @@ cvGaussBJ = function(Y, X, s, Cens, zero = 10^(-10), maxIter = 1500,
                  Yhat = max(abs(Y.star - Y.star.old)))
         cycleperiod  = length(which((round(sigma2.hat[iter],4) == round(sigma2.hat[-iter],4)) == "TRUE"))
         
+        
       }
+      # browser()
       C <- which(Cens[groups == l] == 0)
       if (length(C) > 0) {
-        Y[which(groups == l)][C] = cbind(1,X[which(groups == l),])[C,] %*% beta.hat[iter,] - (sigma2.hat[iter] * dnorm(s[which(groups == l)][C] - cbind(1,X[which(groups == l),])[C,] %*% beta.hat[iter,],  sigma2.hat[iter]))/pnorm(s[which(groups == l)][C] - cbind(1,X[which(groups == l),])[ C,]%*%beta.hat[iter,],  sigma2.hat[iter])
-        mse[l] = sum((Y[groups == l] - cbind(1,X[which(groups == l),])%*%beta.hat[iter,])^2)   
+        Y_l = cbind(1,X[which(groups == l),]) %*% beta.hat[iter,] - (sigma2.hat[iter] * dnorm(s[which(groups == l)] - cbind(1,X[which(groups == l),]) %*% beta.hat[iter,], sd = sigma2.hat[iter])) / pnorm(s[which(groups == l)] - cbind(1,X[which(groups == l),])%*%beta.hat[iter,], sd = sigma2.hat[iter])
+        mse[l] = sum((Y_l - cbind(1,X[which(groups == l),])%*%beta.hat[iter,])^2)   
       } else {
         mse[l] = sum((Y[groups == l] - cbind(1,X[which(groups == l),])%*%beta.hat[iter,])^2)
       }
