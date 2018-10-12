@@ -7,9 +7,12 @@ bujar <- function(y, cens, x, valdata = NULL, degree = 1, learner = "linear.regr
                   rel.inf = FALSE, tol = .Machine$double.eps, n.cores=2,
                   rng=123, trace = FALSE){
   call <- match.call()
+  # browser()
   if(learner == "acosso")
     stop("learner = 'acosso' is no longer supported, see NEWS\n")
-  if(!learner%in%c("linear.regression","mars","pspline","tree",
+  # if(!learner%in%c("linear.regression","mars","pspline","tree",
+  #                  "acosso","enet", "lasso", "enet2", "mnet","snet")) stop(sQuote("weak learner"), learner, " is not implemented")
+  if(!learner%in%c("linear.regression","tree",
                    "acosso","enet", "lasso", "enet2", "mnet","snet")) stop(sQuote("weak learner"), learner, " is not implemented")
   if(!is.null(valdata))
     if((dim(x)[2]+2) !=dim(valdata)[2])
@@ -30,7 +33,7 @@ bujar <- function(y, cens, x, valdata = NULL, degree = 1, learner = "linear.regr
     stop("Not implemented for this degree with learner ",learner, "\n")
   if(learner=="tree" && degree > 1 && twin) stop(sQuote("learner"), learner, sQuote("degree"), degree, sQuote("twin"), twin, "Not implemented\n")
   ### match names to be used in other packages
-  if(learner=="pspline") l2 <- "sm"
+  # if(learner=="pspline") l2 <- "sm"
   else if(learner=="linear.regression") l2 <- "ls"
   else if(learner=="enet2") l2 <- "enet"
   else l2 <- learner
@@ -47,7 +50,8 @@ bujar <- function(y, cens, x, valdata = NULL, degree = 1, learner = "linear.regr
   ybstdiff <- rep(NA, iter.bj+max.cycle)       #changed Apr 2, 2008
   fnorm2 <- mseun <- ybstcon <- rep(NA, iter.bj+max.cycle)       #changed Apr 2, 2008
   mselect <- rep(NA,iter.bj+max.cycle)
-  if(!tuning && learner%in%c("linear.regression","pspline","tree")){
+  # if(!tuning && learner%in%c("linear.regression","pspline","tree")){
+  if(!tuning && learner%in%c("linear.regression","tree")){
     if(length(mstop) > 1){
       if(length(mstop) !=length(mselect))
         stop(sQuote("mstop must be one number or have the length iter.bj+max.cycle for a boosting learner"))
@@ -55,7 +59,8 @@ bujar <- function(y, cens, x, valdata = NULL, degree = 1, learner = "linear.regr
     }
     else mstopRep <- rep(mstop, iter.bj+max.cycle)
   }
-  else if(tuning && learner%in%c("linear.regression","pspline","tree")){
+  # else if(tuning && learner%in%c("linear.regression","pspline","tree")){
+  else if(tuning && learner%in%c("linear.regression","tree")){
     if(length(mstop) > 1)
       stop(sQuote("mstop must be one number if tuning=TRUE for a boosting learner"))
   }      
@@ -105,7 +110,8 @@ bujar <- function(y, cens, x, valdata = NULL, degree = 1, learner = "linear.regr
     dat1 <- as.data.frame(cbind(ynew,x))
     ### Different methods for BJ estimation
     x <- as.matrix(x) 
-    if(learner%in%c("linear.regression","pspline","tree")){
+    # if(learner%in%c("linear.regression","pspline","tree")){
+    if(learner%in%c("linear.regression","tree")){
       if(!tuning) mselect.now <- mstopRep[k]  ### boosting iteration is fixed
       else if(k==1) mselect.now <- mstop ### initial value for boosting and will be updated if the tuning parameter is updated
     }
@@ -155,7 +161,7 @@ bujar <- function(y, cens, x, valdata = NULL, degree = 1, learner = "linear.regr
         cycleb <- NULL
         tuningSwitch <- FALSE;
         #if(learner=="tree")  best.iter <- best.iter                           #use the best number of trees of the previous model
-        if(learner=="mars") ynew <- dat1.glm$ynew
+        # if(learner=="mars") ynew <- dat1.glm$ynew
       }
     }
     else {
@@ -213,23 +219,28 @@ bujar <- function(y, cens, x, valdata = NULL, degree = 1, learner = "linear.regr
       }
     }
     ### prediction and MSE with censoring data in real applications
+    # browser()
     if(!is.null(valdata)){
       if(learner=="linear.regression"){
         #pred.bj <- predict(dat1.glm, newdata=as.matrix(valdata)[,-(1:2)]) ### for twin, or bst function. needs modification if standardized variables
         pred.bj <- as.vector(beta0bj) + as.matrix(valdata)[,-(1:2)] %*% as.vector(betabj/normx) ### needs modification if standardized variables
         mse.bj.val <- mean((valdata[,1][valdata[,2]==1] - pred.bj[valdata[,2]==1])^2)
-      } else if(learner %in% c("pspline", "mars"))
-        pred.bj <- predict(dat1.glm, newdata=valdata[,-(1:2)])
+      } 
+      # else if(learner %in% c("pspline", "mars"))
+      #   pred.bj <- predict(dat1.glm, newdata=valdata[,-(1:2)])
       else if(learner=="tree"){
         if(!twin) pred.bj <- predict(dat1.glm, newdata=as.data.frame(valdata[,-(1:2)]),n.trees=dat1.glm$n.trees)
         else pred.bj <- predict(dat1.glm, newdata=valdata[,-(1:2)])
       }
+      else if(learner=="lasso")
+        pred.bj <- predict(dat1.glm, newx=valdata[,-(1:2)], s=s, type="response")[,1]
       else if(learner=="enet")
         pred.bj <- predict(dat1.glm, newx=valdata[,-(1:2)], s=s, type="fit", mode="fraction")$fit
       else if(learner %in%c("enet2", "mnet", "snet"))
         pred.bj <- predict(dat1.glm, newx=as.matrix(valdata[,-(1:2)]), type="response", which=mselect[k])
       mse.bj.val <- mean((valdata[,1][valdata[,2]==1] - pred.bj[valdata[,2]==1])^2)
     }
+    # browser()
     ### prediciton and MSE with simulations
     if(learner=="enet"){
       tmp <- predict(dat1.glm, type="coef", s=s, mode="fraction")$coef
@@ -251,7 +262,7 @@ bujar <- function(y, cens, x, valdata = NULL, degree = 1, learner = "linear.regr
       if(twin) nz.bj <- sum(abs(coef(dat1.glm))>0) 
       else nz.bj <- sum(abs(coef(dat1.glm)[-1])>0) # -1 means intercept is not counted
       if(trace) {cat("Number of Non-zero coefficients with BJ boosting excluding but listing intercept is",nz.bj,"\n")
-                 print(coef.bj[abs(coef.bj)>0])
+        print(coef.bj[abs(coef.bj)>0])
       }
     }
   }
@@ -298,23 +309,23 @@ bujar <- function(y, cens, x, valdata = NULL, degree = 1, learner = "linear.regr
     xselect <- ifelse(abs(tmp) > 0, 1, 0) 
   }
   else if(learner=="lasso"){
-#     browser()
+    #     browser()
     tmp <- as.vector(predict(dat1.glm, type="coef")[,mselect[k]])
     xselect <- ifelse(abs(tmp) > 0, 1, 0) 
   }
   else if(learner %in% c("enet2", "mnet", "snet"))
     xselect <- ifelse(abs(coef.ncv[-1]) > 0, 1, 0)  ### the first element is intercept, thus removed
-  else if(learner=="pspline"){
-    if(!twin){
-      xselect <- rep(0,dim(x)[2])
-      tmp <- unique(dat1.glm$xselect())-1
-      xselect[tmp] <- 1
-    }
-    else{
-      xselect <- rep(0,dim(x)[2])
-      xselect[dat1.glm$xselect] <- 1 
-    }
-  }
+  # else if(learner=="pspline"){
+  #   if(!twin){
+  #     xselect <- rep(0,dim(x)[2])
+  #     tmp <- unique(dat1.glm$xselect())-1
+  #     xselect[tmp] <- 1
+  #   }
+  #   else{
+  #     xselect <- rep(0,dim(x)[2])
+  #     xselect[dat1.glm$xselect] <- 1 
+  #   }
+  # }
   else if(learner=="acosso"){
     if(dat1.glm$order==1)
       xselect <- ifelse(dat1.glm$theta > 0, 1, 0)
