@@ -2,8 +2,12 @@
 library(NADA)
 library(glmnet)
 library(hdnom)
-library(bujar)
+#library(bujar)
 library(parcor)
+library(mboost)
+library(gbm)
+library(elasticnet)
+library(mpath)
 
 #Download useless function
 source("Bujar/bstfit_PS.R")
@@ -57,7 +61,7 @@ fit_LOD = glmnet::cv.glmnet(X, Y, nfolds = 5, foldid = foldid, alpha=1)
 
 #Lasso NonParaBJ <- modified version from bujar package
 lambda <- seq(0, 5, by = 0.2)
-fit_NonParBJ <- bujar(x = X, y = Z, cens = Cens, learner = "lasso", lambda = lambda,
+fit_NonParBJ <- bujar(x = X, y = Z, cens = Cens, learner = "lasso", valdata = cbind(Z, Cens, X), lambda = lambda,
                       nfold = 5, foldid = foldid, cv = TRUE, tuning = TRUE, trace = TRUE)
 
 #Quantile regression
