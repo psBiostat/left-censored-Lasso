@@ -13,7 +13,7 @@ bujar <- function(y, cens, x, valdata = NULL, degree = 1, learner = "linear.regr
   # if(!learner%in%c("linear.regression","mars","pspline","tree",
   #                  "acosso","enet", "lasso", "enet2", "mnet","snet")) stop(sQuote("weak learner"), learner, " is not implemented")
   if(!learner%in%c("linear.regression","tree",
-                   "acosso","enet", "lasso", "enet2", "mnet","snet")) stop(sQuote("weak learner"), learner, " is not implemented")
+                   "acosso","enet", "lasso")) stop(sQuote("weak learner"), learner, " is not implemented")
   if(!is.null(valdata))
     if((dim(x)[2]+2) !=dim(valdata)[2])
       stop("check the dimension of x and valdata\n")
@@ -35,7 +35,7 @@ bujar <- function(y, cens, x, valdata = NULL, degree = 1, learner = "linear.regr
   ### match names to be used in other packages
   # if(learner=="pspline") l2 <- "sm"
   else if(learner=="linear.regression") l2 <- "ls"
-  else if(learner=="enet2") l2 <- "enet"
+  # else if(learner=="enet2") l2 <- "enet"
   else l2 <- learner
   xbar <- colMeans(x)                                    #componentwise linear least square
   f <- 0
@@ -123,7 +123,7 @@ bujar <- function(y, cens, x, valdata = NULL, degree = 1, learner = "linear.regr
     dat1.glm <- bstres$dat1.glm
     if(!is.null(bstres$mselect )){
       mselect.now <- mselect[k] <- bstres$mselect  ###update mselect.now for next BJ iteration, and store the value
-      }
+    }
     ### Compute predicted values and convergence criteria                                    
     predres <- predval(learner, twin, dat1.glm, b, k, x, s, mselect[k])
     Fboost <- predres$Fboost
@@ -238,8 +238,8 @@ bujar <- function(y, cens, x, valdata = NULL, degree = 1, learner = "linear.regr
         pred.bj <- predict(dat1.glm, newx=valdata[,-(1:2)], s=s, type="response")[,1]
       else if(learner=="enet")
         pred.bj <- predict(dat1.glm, newx=valdata[,-(1:2)], s=s, type="fit", mode="fraction")$fit
-      else if(learner %in%c("enet2", "mnet", "snet"))
-        pred.bj <- predict(dat1.glm, newx=as.matrix(valdata[,-(1:2)]), type="response", which=mselect[k])
+      # else if(learner %in%c("enet2", "mnet", "snet"))
+      #   pred.bj <- predict(dat1.glm, newx=as.matrix(valdata[,-(1:2)]), type="response", which=mselect[k])
       mse.bj.val <- mean((valdata[,1][valdata[,2]==1] - pred.bj[valdata[,2]==1])^2)
     }
     # browser()
@@ -250,8 +250,8 @@ bujar <- function(y, cens, x, valdata = NULL, degree = 1, learner = "linear.regr
       beta.enet <- rep(0, p)
       beta.enet[dat1.glm$allset] <- tmp
     }
-    else if(learner %in% c("enet2", "mnet", "snet"))
-      coef.ncv <- predict(dat1.glm, newx=x, type="coefficients", which=mselect[k])
+    # else if(learner %in% c("enet2", "mnet", "snet"))
+    #   coef.ncv <- predict(dat1.glm, newx=x, type="coefficients", which=mselect[k])
     if(trace) {
       cat("mse.bj=",mse.bj,"\n","correlation of predicted and observed times in noncensoring training data is",cor(y[cens==1],Fboost[cens==1]),"\n\n")
       cat("mse of predicted times of validate data is\n")
@@ -315,8 +315,8 @@ bujar <- function(y, cens, x, valdata = NULL, degree = 1, learner = "linear.regr
     tmp <- as.vector(predict(dat1.glm, type="coef")[,mselect[k]])
     xselect <- ifelse(abs(tmp) > 0, 1, 0) 
   }
-  else if(learner %in% c("enet2", "mnet", "snet"))
-    xselect <- ifelse(abs(coef.ncv[-1]) > 0, 1, 0)  ### the first element is intercept, thus removed
+  # else if(learner %in% c("enet2", "mnet", "snet"))
+  #   xselect <- ifelse(abs(coef.ncv[-1]) > 0, 1, 0)  ### the first element is intercept, thus removed
   # else if(learner=="pspline"){
   #   if(!twin){
   #     xselect <- rep(0,dim(x)[2])
@@ -360,8 +360,8 @@ bujar <- function(y, cens, x, valdata = NULL, degree = 1, learner = "linear.regr
   }
   else if(learner=="enet") 
     coef.bj <- c(beta0.enet, beta.enet)
-  else if(learner %in%c("enet2", "mnet", "snet"))
-    coef.bj <- coef.ncv 
+  # else if(learner %in%c("enet2", "mnet", "snet"))
+  #   coef.bj <- coef.ncv 
   if(!is.null(vim)) vim <- 100*vim/sum(vim)
   RET <- list(x=x,y=y,cens=cens,ynew=ynew,res.fit=dat1.glm,learner=learner,degree=degree,mse=mse,nz.bj.iter=nz.bj.iter,mse.bj=mse.bj,mse.bj.val=mse.bj.val,nz.bj=nz.bj,mse.all=mseun[1:(k-1)],yhat=Fboost,ybstdiff=c(NA,ybstdiff[1:(k-1)]),ybstcon = ybstcon,coef.bj=coef.bj,pred.bj=pred.bj,cycleperiod=cycleperiod,cycle.coef.diff = cycle.coef.diff,nonconv=nonconv,fnorm2=fnorm2,vim=vim,interactions=interactions,mselect=mselect,contype=contype,xselect=xselect,lamb=lamb, s=s, mse.tr=mse.tr,valdata=valdata, twin=twin)
   RET$call <- match.call()
@@ -455,11 +455,11 @@ predict.bujar <- function(object, newx=NULL, ...){
   }
   else if(learner=="enet")
     pred.bj <- predict(dat1.glm, newx=newx, s=object$s, type="fit", mode="fraction")$fit
-  else if(learner %in%c("enet2", "mnet", "snet")){
-    mselect <- object$mselect
-    k <- length(mselect)
-    pred.bj <- predict(dat1.glm, newx=as.matrix(newx), type="response", which=mselect[k])
-  }
+  # else if(learner %in%c("enet2", "mnet", "snet")){
+  #   mselect <- object$mselect
+  #   k <- length(mselect)
+  #   pred.bj <- predict(dat1.glm, newx=as.matrix(newx), type="response", which=mselect[k])
+  # }
 }
 
 summary.bujar <- function(object, ...)
